@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Autoloop · 本地工作台</title><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script></head>
+<body>
+<aside class="nav"><a class="brand" href="/" aria-label="Autoloop 首页"><span class="logo">a</span>autoloop<span class="local">本地</span></a>
+<div class="nav-label">工作空间</div><button class="project selected"><span class="project-icon">L</span><span>LifeAgent<small>个人与家庭智能管家</small></span></button>
+<div class="nav-note">从一个想法，到一次验证。<br>把下一步交给你的 Agent。</div>
+<div class="nav-bottom"><span id="connection" class="connection">正在连接中台</span><small>只在这台电脑上提供服务</small></div></aside>
+<main><header><div><span class="eyebrow">LIFEAGENT / WORKSPACE</span><h1>一起，把它做出来。</h1><p>提出需求，跟进开发，在需要时做决定。</p></div><div class="header-actions"><button id="qq-open" class="secondary">QQ 接入</button><button id="refresh" class="secondary">刷新状态</button></div></header>
+<div id="error" class="error" role="alert" hidden></div>
+<div class="workspace"><section class="chat-panel" aria-label="与 Agent 对话"><div class="panel-title"><div><span class="live-dot"></span><strong>项目对话</strong></div><span>后台 Codex</span></div>
+<div id="chat" class="chat" aria-live="polite"><div class="welcome"><div class="welcome-icon">✳</div><h2>下一步，你想做什么？</h2><p>可以讨论需求，也可以直接交给我开发。<br>我会先看项目现状，再给你真实的执行结果。</p><div class="suggestions"><button data-suggestion="查看 LifeAgent 当前开发进度，说明已完成内容、阻塞和建议的下一步。不要修改文件。">项目进行到哪里了？</button><button data-suggestion="请阅读 LifeAgent_V0.1.md，说明 V0.1 的最小可运行版本应包含什么，暂不修改代码。">讨论最小可运行版本</button></div></div></div>
+<form id="composer" class="composer"><label class="sr-only" for="message">发送需求或问题</label><textarea id="message" maxlength="3500" placeholder="描述你的需求，或问问当前进度…" rows="3" required></textarea><div class="compose-footer"><span id="send-hint">Enter 发送 · Shift + Enter 换行</span><button id="send" class="primary" type="submit">发送消息</button></div></form><p class="chat-footnote">消息会使用你的 Codex 模型额度。后台执行结束后，结果会自动出现在这里。</p></section>
+<aside class="details"><section class="detail-card"><div class="section-heading"><h2>运行概况</h2><span id="updated">连接中</span></div><div class="metrics"><div><strong id="running">—</strong><span>进行中</span></div><div><strong id="waiting">—</strong><span>待你决定</span></div><div><strong id="done">—</strong><span>已结束轮次</span></div></div><div id="agent-status" class="subtle">正在检查 Agent</div></section>
+<section class="detail-card"><div class="section-heading"><h2>需要你决定</h2><span id="card-count" class="badge">0</span></div><div id="cards"><p class="empty">正在读取卡片</p></div></section>
+<section class="detail-card"><div class="section-heading"><h2>最近任务</h2><button id="continue" class="text-button">继续开发</button></div><div id="runs"><p class="empty">正在读取任务</p></div></section>
+<section class="detail-card"><details><summary>项目开发记录 <span>查看文档</span></summary><pre id="progress">正在读取进度</pre></details></section>
+</aside></div><footer>AGENT AUTOLOOP<span>本地执行 · 结果可追溯 · 决策由你掌握</span></footer></main>
+<dialog id="stop-dialog"><h2>停止这个任务？</h2><p>已写入的文件会保留。Agent 将停止本轮执行。</p><div class="dialog-actions"><button id="dismiss-stop" class="secondary">返回</button><button id="confirm-stop" class="primary">停止任务</button></div></dialog>
+<dialog id="qq-dialog" class="qq-dialog"><div class="section-heading"><h2>用手机 QQ 连接 Autoloop</h2><button id="qq-close" class="text-button">关闭</button></div>
+<p>先在 <a href="https://q.qq.com/" target="_blank" rel="noreferrer">QQ 开放平台</a> 创建官方机器人，开通单聊并将自己的 QQ 加入测试范围。这里仅接收你绑定账号的单聊消息。</p>
+<p id="qq-status" class="subtle" role="status">正在读取接入状态</p><p id="qq-error" class="error" role="alert" hidden></p>
+<form id="qq-form" class="qq-form"><label for="qq-appid">AppID</label><input id="qq-appid" inputmode="numeric" autocomplete="off" required placeholder="机器人 AppID">
+<label for="qq-secret">AppSecret</label><input id="qq-secret" type="password" autocomplete="new-password" placeholder="仅保存到这台电脑，不在页面回显">
+<label for="qq-transport">事件接收方式</label><select id="qq-transport"><option value="websocket">WebSocket 长连接</option><option value="webhook">Webhook 回调</option></select>
+<p id="qq-transport-help" class="subtle">选择开放平台实际提供的接入方式。</p><button id="qq-save" class="primary" type="submit">保存并连接</button></form>
+<section id="qq-pairing" hidden><h3>绑定你的 QQ</h3><p>扫码添加机器人后，用手机向机器人发送下面的口令，再回此页面确认账号。绑定前的消息不会执行任务。</p><pre id="qq-code" class="pairing-code"></pre><button id="qq-copy" class="secondary" type="button">复制绑定口令</button><p id="qq-binding-hint" class="subtle" role="status"></p><div id="qq-pending"></div></section>
+<section id="qq-bound" hidden><h3>已绑定账号</h3><p id="qq-owner" class="openid"></p><p>手机发送“进度”查看状态；“回答 2 1”选择卡片；“停止 8”停止任务。其他文字作为需求交给 Codex。</p><p>结果和待确认事项会主动推送。QQ 需允许机器人主动发消息；发送受平台权限和频率限制。</p></section>
+<p id="qq-webhook-help" class="subtle" hidden>Webhook 本地接收地址为 http://127.0.0.1:3367/qq/webhook。需要将这一条回调通过 HTTPS 转发后填入 QQ 开放平台，订阅 C2C_MESSAGE_CREATE。不要将本地工作台或中台端口直接开放到公网。回调尚未配置时不能接收手机消息。</p>
+<div class="dialog-actions"><button id="qq-disable" class="secondary" type="button">停用 QQ</button><button id="qq-unbind" class="secondary" type="button">解除绑定并停用</button></div>
+</dialog>
+</body></html>

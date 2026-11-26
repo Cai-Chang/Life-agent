@@ -1,0 +1,15 @@
+{
+  "name": "lifeagent-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {"react": "19.3.1", "react-dom": "19.3.1"},
+  "devDependencies": {"@playwright/test": "1.65.1", "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0", "@types/node": "^24.0.0", "@vitejs/plugin-react": "6.3.0", "typescript": "7.0.2", "vite": "8.3.8"},
+  "engines": {"node": ">=24"}
+}

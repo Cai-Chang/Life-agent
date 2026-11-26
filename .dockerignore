@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+.conda*
+.uv-cache
+.pip-cache
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/test-results
+**/playwright-report
+autoloop-chat
+docs

@@ -1,0 +1,21 @@
+[project]
+name = "lifeagent-backend"
+version = "0.1.0"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "alembic==1.20.1",
+    "argon2-cffi>=25,<26",
+    "email-validator>=2,<3",
+    "fastapi==0.141.1",
+    "psycopg[binary]>=3.2,<4",
+    "sqlalchemy==2.0.58",
+    "tzdata>=2025",
+    "uvicorn==0.52.3",
+]
+
+[dependency-groups]
+dev = ["pytest==9.1.1", "httpx==0.28.1"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

@@ -1,0 +1,136 @@
+name: check
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17.12-alpine
+        env:
+          POSTGRES_USER: lifeagent_ci
+          POSTGRES_PASSWORD: ci-test-only
+          POSTGRES_DB: lifeagent_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U lifeagent_ci -d lifeagent_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://lifeagent_ci:ci-test-only@127.0.0.1:5432/lifeagent_ci
+      LIFEAGENT_TEST_DATABASE_URL: postgresql+psycopg://lifeagent_ci:ci-test-only@127.0.0.1:5432/lifeagent_ci
+      APP_ENV: development
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13.13'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.15.0'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: python -m pip install --require-hashes -r backend/requirements.lock
+      - run: python -m pip check
+      - run: python -m pytest -q backend/tests
+      - run: python -m lifeagent.migrate
+        working-directory: backend
+      - run: python -m lifeagent.worker --check
+        working-directory: backend
+      - run: npm ci --no-fund --no-audit
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: python scripts/run_e2e.py
+      - name: Validate container configuration
+        run: |
+          docker compose config --quiet
+          docker compose --profile worker config --quiet
+        env:
+          POSTGRES_PASSWORD: ci-container-only
+      - name: Build and start the complete container stack
+        run: docker compose up --build --detach --wait --wait-timeout 180
+        env:
+          POSTGRES_PASSWORD: ci-container-only
+      - name: Test health and authentication through Nginx
+        run: python scripts/smoke_deployment.py --exercise-auth
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail 100
+        env:
+          POSTGRES_PASSWORD: ci-container-only
+      - name: Clean up disposable CI containers
+        if: always()
+        run: docker compose down --volumes
+        env:
+          POSTGRES_PASSWORD: ci-container-only
+
+  publish:
+    name: publish-${{ matrix.component }}
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [api, frontend]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Resolve registry image name
+        id: image
+        shell: bash
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}-${COMPONENT}" >> "$GITHUB_OUTPUT"
+        env:
+          COMPONENT: ${{ matrix.component }}
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        id: meta
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+      - name: Build and publish validated revision
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: push
+        with:
+          context: .
+          file: deploy/Dockerfile.${{ matrix.component == 'api' && 'backend' || 'frontend' }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: Record published image
+        shell: bash
+        run: |
+          printf '### Published %s\n\n' "$COMPONENT" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Image: `%s@%s`\n\nCommit: `%s`\n' "$IMAGE" "$DIGEST" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          COMPONENT: ${{ matrix.component }}
+          IMAGE: ${{ steps.image.outputs.name }}
+          DIGEST: ${{ steps.push.outputs.digest }}

@@ -1,0 +1,7 @@
+name: lifeagent-dev
+channels:
+  - defaults
+dependencies:
+  - python=3.13.13
+  - pip=26.1.1
+# Install app and test dependencies from backend/requirements.lock afterwards.

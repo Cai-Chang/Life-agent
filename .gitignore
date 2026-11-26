@@ -1,0 +1,15 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+node_modules/
+dist/
+.uv-cache/
+.conda/
+.conda-pkgs*/
+.pip-cache/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.DS_Store

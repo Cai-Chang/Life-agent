@@ -1,0 +1,71 @@
+name: lifeagent
+services:
+  postgres:
+    image: postgres:17.12-alpine
+    environment:
+      POSTGRES_DB: lifeagent
+      POSTGRES_USER: lifeagent
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/configure_env.py first}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U lifeagent -d lifeagent']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+  migrate:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.backend
+    environment: &api-environment
+      DATABASE_URL: postgresql+psycopg://lifeagent:${POSTGRES_PASSWORD}@postgres:5432/lifeagent
+      APP_ENV: ${APP_ENV:-development}
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8080}
+    command: [python, -m, lifeagent.migrate]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.backend
+    environment: *api-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    restart: unless-stopped
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.frontend
+    ports:
+      - '127.0.0.1:${LIFEAGENT_HTTP_PORT:-8080}:80'
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+  worker:
+    profiles: [worker]
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.backend
+    environment: *api-environment
+    command: [python, -m, lifeagent.worker]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -m, lifeagent.worker, --check]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+volumes:
+  postgres-data:
