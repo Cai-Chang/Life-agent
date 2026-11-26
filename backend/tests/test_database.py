@@ -19,7 +19,7 @@ def test_readiness_checks_real_revision_without_writing(monkeypatch):
     with engine.begin() as conn:
         assert not conn.dialect.has_table(conn, 'alembic_version')
         MigrationContext.configure(conn)._ensure_version_table()
-        conn.execute(text("INSERT INTO alembic_version VALUES ('0003_calendar_tasks')"))
+        conn.execute(text("INSERT INTO alembic_version VALUES ('0004_conversations')"))
     assert database.readiness() == (True, 'ready')
     with engine.begin() as conn:
         conn.execute(text("UPDATE alembic_version SET version_num='unknown'"))
