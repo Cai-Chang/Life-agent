@@ -1,6 +1,6 @@
 # LifeAgent
 
-个人与家庭智能管家的开发项目。需求基线为 [LifeAgent_V0.1.md](LifeAgent_V0.1.md)。
+个人与家庭智能管家的开发项目。正式仓库：[Cai-Chang/Life-agent](https://github.com/Cai-Chang/Life-agent)。需求基线为 [LifeAgent_V0.1.md](LifeAgent_V0.1.md)。
 
 当前已可使用：注册、登录、退出、个人空间、空间改名、昵称和 IANA 时区设置。账号使用 Argon2id 密码哈希、可撤销的服务端会话和 HttpOnly Cookie；个人空间按用户归属隔离。日历、待办、AI 对话、MCP 与任务执行属于后续阶段，当前没有这些业务功能。
 
@@ -82,7 +82,7 @@ npm --prefix frontend run build
 
 浏览器测试默认使用本机 Chrome。Linux/CI 使用 `npx playwright install --with-deps chromium` 准备浏览器，并设置 `CI=1`。通过 `LIFEAGENT_TEST_DATABASE_URL` 指定测试 PostgreSQL 的管理连接时，测试仍会创建独立随机数据库，不修改该连接指向的已有业务库。
 
-CI 配置位于 `.github/workflows/check.yml`：固定官方 Actions 提交，运行后端真实 PostgreSQL 测试、前端类型检查与构建、桌面/手机 E2E、Compose 校验与镜像构建。云端 CI 是否通过必须以实际工作流结果为准。
+CI 配置位于 `.github/workflows/check.yml`：固定官方 Actions 提交，运行后端真实 PostgreSQL 测试、前端类型检查与构建、桌面/手机 E2E、Compose 校验、真实容器启动与认证冒烟。main 或版本标签通过后自动发布 API/前端的 amd64、arm64 镜像到 GHCR，部署地址稍后确定；部署说明见 [仓库与 CI/CD](docs/repository-and-cicd.md)。云端 CI 是否通过必须以实际工作流结果为准。
 
 最新本机测试结果及未验收项见 [验收报告](docs/verification-dev02.md) 和 [开发进度](docs/development-status.md)。
 
@@ -114,4 +114,4 @@ docs/                  决策、架构与真实开发记录
 autoloop-chat/         独立的 Autoloop 管理工具
 ```
 
-当前完成 DEV-02 的账号与个人空间闭环。DEV-01 工程文件已补齐，容器运行及远端 CI 的验收情况单独列在报告中；后续按 DEV-03 开发日程/待办及冲突检查。代码尚未提交或推送。
+当前完成 DEV-02 的账号与个人空间闭环。DEV-01 工程文件已补齐，容器运行及远端 CI 的验收情况单独列在报告中；后续按 DEV-03 开发日程/待办及冲突检查。代码通过正式 GitHub 仓库管理；main 用于稳定镜像交付，develop 用于后续开发集成。

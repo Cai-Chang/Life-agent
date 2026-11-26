@@ -14,7 +14,7 @@ services:
       retries: 30
     restart: unless-stopped
   migrate:
-    image: ghcr.io/cai-chang/life-agent-api:${LIFEAGENT_VERSION:?Set an immutable sha-commit tag or version}
+    image: ghcr.io/cai-chang/life-agent-api:${LIFEAGENT_VERSION:?Set a sha-commit tag or release version}
     environment: &app-environment
       DATABASE_URL: postgresql+psycopg://lifeagent:${POSTGRES_PASSWORD}@postgres:5432/lifeagent
       APP_ENV: ${APP_ENV:-development}
