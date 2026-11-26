@@ -1,6 +1,6 @@
 import {useEffect,useState,type FormEvent} from 'react';
 import {allItems,api,type CalendarEvent,type Task,type Profile} from './api';
-import {candidates,dayShift,dayStart,instant,localTime,pretty} from './time';
+import {candidates,dayShift,dayStart,instant,localTime,pretty,validDay} from './time';
 
 const stateNames:Record<Task['status'],string>={pending:'待完成',in_progress:'进行中',done:'已完成',cancelled:'已取消'};
 const priorityNames={low:'低',normal:'普通',high:'高'};
@@ -16,7 +16,7 @@ export function CalendarPage({profile}:{profile:Profile}){
   const zone=profile.user.timezone,today=localTime(new Date(),zone).slice(0,10);
   const params=new URLSearchParams(location.hash.split('?')[1]||'');
   const initialDay=params.get('date')||'';
-  const [anchor,setAnchor]=useState(/^\d{4}-\d{2}-\d{2}$/.test(initialDay)&&Number.isFinite(Date.parse(initialDay+'T12:00Z'))?initialDay:today),[view,setView]=useState<'week'|'month'>(params.get('view')==='month'?'month':'week'),[showCancelled,setShowCancelled]=useState(false);
+  const [anchor,setAnchor]=useState(validDay(initialDay)?initialDay:today),[view,setView]=useState<'week'|'month'>(params.get('view')==='month'?'month':'week'),[showCancelled,setShowCancelled]=useState(false);
   const [items,setItems]=useState<CalendarEvent[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0);
   const [editing,setEditing]=useState<CalendarEvent|null|undefined>(undefined);
   useEffect(()=>{history.replaceState(null,'','#/calendar?'+new URLSearchParams({date:anchor,view}));},[anchor,view]);
@@ -34,7 +34,7 @@ export function CalendarPage({profile}:{profile:Profile}){
   const days:string[]=[];for(let d=start;d<end;d=dayShift(d,1))days.push(d);
   const visible=items.filter(e=>showCancelled||e.status==='active');
   return <><div className="page-heading"><div><span className="overline">MAKE TIME FOR WHAT MATTERS</span><h1>日程</h1><p>时间按 {zone} 展示，重叠日程会在保存时提示。</p></div><button className="primary" onClick={()=>{setEditing(null);setNotice('');}}>新建日程</button></div>
-    <Result error={error} notice={notice}/><div className="planner-toolbar"><div className="segmented"><button aria-pressed={view==='week'} onClick={()=>setView('week')}>周视图</button><button aria-pressed={view==='month'} onClick={()=>setView('month')}>月视图</button></div><label>查看日期<input aria-label="查看日期" type="date" required value={anchor} onChange={e=>{if(e.target.value)setAnchor(e.target.value);}}/></label><button className="secondary" onClick={()=>setAnchor(today)}>今天</button><button className="secondary" disabled={loading} onClick={()=>setRevision(v=>v+1)}>刷新日程</button><label className="check-label"><input type="checkbox" checked={showCancelled} onChange={e=>setShowCancelled(e.target.checked)}/>显示已取消</label></div>
+    <Result error={error} notice={notice}/><div className="planner-toolbar"><div className="segmented"><button aria-pressed={view==='week'} onClick={()=>setView('week')}>周视图</button><button aria-pressed={view==='month'} onClick={()=>setView('month')}>月视图</button></div><label>查看日期<input aria-label="查看日期" type="date" min="0001-01-01" max="9998-12-31" required value={anchor} onChange={e=>{if(validDay(e.target.value))setAnchor(e.target.value);}}/></label><button className="secondary" onClick={()=>setAnchor(today)}>今天</button><button className="secondary" disabled={loading} onClick={()=>setRevision(v=>v+1)}>刷新日程</button><label className="check-label"><input type="checkbox" checked={showCancelled} onChange={e=>setShowCancelled(e.target.checked)}/>显示已取消</label></div>
     {editing!==undefined&&<EventForm key={editing?.id||'new'} event={editing} zone={zone} day={anchor} onClose={()=>setEditing(undefined)} onSaved={()=>{setEditing(undefined);setNotice('日程已保存');setRevision(v=>v+1);}}/>}
     <p className="range-label">{start} — {dayShift(end,-1)} · {loading?'正在加载…':`${visible.length} 个日程`}</p>
     {!loading&&error&&<p className="muted">未能加载最新日程，请点击“刷新日程”重试。</p>}

@@ -1,6 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
 import {randomUUID} from 'node:crypto';
-import {candidates,instant,localTime,dayStart} from '../src/time';
+import {candidates,instant,localTime,dayStart,validDay} from '../src/time';
 
 async function register(page:Page,zone='Asia/Shanghai'){
   await page.goto('/#/register');await page.getByLabel('昵称',{exact:true}).fill('日程测试');
@@ -88,4 +88,8 @@ test('配置时区与夏令时重复、缺失时刻处理',()=>{
   expect(instant('2026-11-01T01:30','America/New_York','2026-11-01T06:30:00.000Z')).toBe('2026-11-01T06:30:00.000Z');
   expect(candidates('2026-03-08T02:30','America/New_York')).toEqual([]);
   expect(dayStart('2026-12-01','Asia/Shanghai')).toBe('2026-11-30T16:00:00.000Z');
+  expect(candidates('2011-12-30T09:00','Pacific/Apia')).toEqual([]);
+  expect(dayStart('2011-12-30','Pacific/Apia')).toBe(dayStart('2011-12-31','Pacific/Apia'));
+  expect(localTime(instant('1900-01-01T09:00','Asia/Shanghai'),'Asia/Shanghai')).toBe('1900-01-01T09:00');
+  expect(validDay('2026-02-31')).toBe(false);expect(validDay('0000-01-01')).toBe(false);
 });
