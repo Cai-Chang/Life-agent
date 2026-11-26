@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from lifeagent.auth import AuthLimiter, router
 from lifeagent.database import readiness
 from lifeagent.planning import router as planning_router
+from lifeagent.conversations import router as chat_router
 
 
 def create_app():
@@ -48,6 +49,7 @@ def create_app():
 
     app.include_router(router)
     app.include_router(planning_router)
+    app.include_router(chat_router)
     app.add_api_route('/health/live', live, methods=['GET'])
     app.add_api_route('/health/ready', ready, methods=['GET'])
     return app

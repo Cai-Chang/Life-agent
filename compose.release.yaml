@@ -27,6 +27,7 @@ services:
   api:
     image: ghcr.io/cai-chang/life-agent-api:${LIFEAGENT_VERSION}
     environment: *app-environment
+    volumes: [model-settings:/var/lib/lifeagent/model-settings]
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -45,3 +46,4 @@ services:
     restart: unless-stopped
 volumes:
   postgres-data:
+  model-settings:

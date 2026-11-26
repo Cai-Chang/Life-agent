@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 from uuid import uuid4
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL, make_url
@@ -24,8 +25,17 @@ def main():
         PATH=str(Path(sys.executable).parent)+os.pathsep+os.environ['PATH'],APP_ENV='development')
     try:
         subprocess.run([sys.executable,'-m','lifeagent.migrate'],cwd=ROOT/'backend',env=env,check=True)
-        result=subprocess.run(['npm','run','test:e2e','--',*sys.argv[1:]],cwd=ROOT/'frontend',env=env)
-        return result.returncode
+        options=sys.argv[1:]
+        projects=[None] if any(v=='--project' or v.startswith('--project=') for v in options) else ['desktop','mobile']
+        with tempfile.TemporaryDirectory(prefix='lifeagent-e2e-models-') as settings:
+            env['LIFEAGENT_MODEL_CONFIG_DIR']=settings
+            for project in projects:
+                extra=[] if project is None else ['--project='+project]
+                project_env=dict(env,LIFEAGENT_E2E_PROJECT=project or 'selected')
+                result=subprocess.run(['npm','run','test:e2e','--',*options,*extra],cwd=ROOT/'frontend',env=project_env)
+                if result.returncode:
+                    return result.returncode
+        return 0
     finally:
         with engine.connect() as connection:
             connection.exec_driver_sql('DROP DATABASE '+name+' WITH (FORCE)')

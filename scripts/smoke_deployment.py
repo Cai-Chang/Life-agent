@@ -18,7 +18,7 @@ def main():
 
     def request(route, body=None, method=None, csrf=None, key=None):
         headers = {'Content-Type': 'application/json'}
-        if body is not None and route.startswith(('/api/v1/events', '/api/v1/tasks')):
+        if body is not None and route.startswith(('/api/v1/events', '/api/v1/tasks', '/api/v1/conversations')):
             headers['Idempotency-Key'] = key or str(uuid4())
         if csrf:
             headers['X-CSRF-Token'] = csrf
@@ -54,6 +54,20 @@ def main():
         assert request('/api/v1/events/'+event['id'], {'version':1}, method='DELETE', csrf=csrf)[1]['status'] == 'cancelled'
         assert request('/api/v1/tasks/'+task['id'])[1]['status'] == 'done'
         assert request('/api/v1/tasks/'+task['id'], {'version':2}, method='DELETE', csrf=csrf)[0] == 200
+        # Exercise private config-volume writes without calling any paid model.
+        code, settings = request('/api/v1/model-settings')
+        assert code == 200 and not settings['configured']
+        code, settings = request('/api/v1/model-settings', {'provider':'deepseek','model':'deepseek-flash',
+            'api_key':'ci-placeholder-not-a-real-key','consent':True}, method='PUT', csrf=csrf)
+        assert code == 200 and settings['configured'] and 'api_key' not in settings
+        assert request('/api/v1/model-settings', {}, method='DELETE', csrf=csrf)[1]['configured'] is False
+        code, conversation = request('/api/v1/conversations', {}, csrf=csrf)
+        assert code == 201
+        path = '/api/v1/conversations/'+conversation['id']
+        assert request(path)[1]['items'] == []
+        assert request(path+'/messages', {'content':'CI check without model credentials'}, csrf=csrf)[0] == 409
+        assert request(path, {'version':1}, method='DELETE', csrf=csrf)[1]['deleted']
+        print('Chat persistence and private model-config volume smoke passed; no real model called.')
         print('Planning smoke passed: event, replay, conflict, linked task, completion, cancellation and deletion.')
         assert request('/api/v1/auth/logout', {}, csrf=csrf)[0] == 204
         assert request('/api/v1/me')[0] == 401

@@ -2,7 +2,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, Uuid, func, Integer, Text, Index, JSON
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, Uuid, func, Integer, Text, Index, JSON, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -104,4 +104,40 @@ class OperationRecord(Base):
     request_hash: Mapped[str] = mapped_column(String(64))
     result: Mapped[dict] = mapped_column(JSON)
     status_code: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Conversation(Base):
+    __tablename__ = 'conversations'
+    __table_args__ = (Index('ix_conversations_owner_updated', 'workspace_id', 'owner_id', 'updated_at'),)
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey('workspaces.id', ondelete='CASCADE'))
+    owner_id: Mapped[UUID] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'))
+    title: Mapped[str] = mapped_column(String(80), default='新对话')
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    next_sequence: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatMessage(Base):
+    __tablename__ = 'messages'
+    __table_args__ = (
+        UniqueConstraint('conversation_id', 'sequence', name='uq_message_sequence'),
+        UniqueConstraint('conversation_id', 'turn_key', 'role', name='uq_message_turn_role'),
+        CheckConstraint("role IN ('user','assistant')", name='message_role'),
+        CheckConstraint("status IN ('complete','pending','failed')", name='message_status'),
+    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    conversation_id: Mapped[UUID] = mapped_column(ForeignKey('conversations.id', ondelete='CASCADE'))
+    turn_key: Mapped[str] = mapped_column(String(128))
+    sequence: Mapped[int] = mapped_column(Integer)
+    role: Mapped[str] = mapped_column(String(16))
+    content: Mapped[str] = mapped_column(Text, default='')
+    status: Mapped[str] = mapped_column(String(16), default='complete')
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    lease_token: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=1)
+    model: Mapped[str] = mapped_column(String(128), default='')
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -1,9 +1,12 @@
 FROM python:3.13.13-slim
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 LIFEAGENT_MODEL_CONFIG_DIR=/var/lib/lifeagent/model-settings
 WORKDIR /app
 COPY backend/requirements.lock ./requirements.lock
 RUN pip install --no-cache-dir --require-hashes -r requirements.lock \
-    && useradd --create-home --uid 10001 lifeagent
+    && useradd --create-home --uid 10001 lifeagent \
+    && mkdir -p /var/lib/lifeagent/model-settings \
+    && chown lifeagent:lifeagent /var/lib/lifeagent/model-settings \
+    && chmod 700 /var/lib/lifeagent/model-settings
 COPY --chown=lifeagent:lifeagent backend/ ./
 USER lifeagent
 EXPOSE 8000

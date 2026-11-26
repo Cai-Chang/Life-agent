@@ -52,8 +52,9 @@ test('注册、空间重命名、资料持久化、退出及重新登录',async(
 test('会话丢失后拒绝修改并返回登录页',async({page,context})=>{
   await register(page,`session-${randomUUID()}@example.com`);
   await page.getByRole('link',{name:'个人设置',exact:true}).click();
-  await context.clearCookies();
+  await expect(page.getByLabel('服务商与地域',{exact:true})).toBeVisible();
   await page.getByLabel('昵称',{exact:true}).fill('不应保存');
+  await context.clearCookies();
   await page.getByRole('button',{name:'保存个人资料'}).click();
   await expect(page.getByRole('heading',{name:'欢迎回来'})).toBeVisible();
   await expect(page.getByRole('alert')).toHaveText('登录已失效，请重新登录。');
