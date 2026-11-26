@@ -24,7 +24,11 @@ PR #1已按用户明确授权审查、修复日期边界缺陷，并通过[精�
 
 ## 云端与真实服务
 
-云端CI/容器待本分支上传后实际执行。Mac没有Docker Engine，不把配置检查当作容器运行通过。
+DEV-04 PR：[PR #2](https://github.com/Cai-Chang/Life-agent/pull/2)，目标develop，当前尚未合并。
+
+云端运行：[45798217633](https://github.com/Cai-Chang/Life-agent/actions/runs/45798217633)，受测业务提交c0d93a8ef21037ebb448e42f01b341eec05c69cb，结果以该运行记录为准。本次手动触发；push/PR自动触发仍未观察到，不能认定该旧工程问题已恢复。
+
+Mac没有Docker Engine，容器验收由GitHub runner执行。此处后续文档提交不改变业务代码，不重新调用真实模型或重复发布。
 
 用户已在本机保存真实模型API Key，报告页面“连接测试成功”。随后使用服务端适配器向真实DeepSeek服务发送两轮无个人资料的短测试消息，第二轮正确保留随机测试暗号，实测通过。未读取或发送用户日程、待办或已有聊天正文，未打印或复制密钥。
 
