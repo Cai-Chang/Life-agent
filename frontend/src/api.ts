@@ -26,7 +26,10 @@ export async function api<T>(path: string, body?: unknown, method?: string): Pro
   if (!response.ok) {
     const labels: Record<string,string> = {email:'邮箱',password:'密码',display_name:'昵称',timezone:'时区',name:'空间名称',title:'标题',start_at:'开始时间',end_at:'结束时间',due_at:'截止时间',description:'备注',version:'版本'};
     const details = data.error?.fields?.map((v: {field: string; message: string}) => `${labels[v.field] || v.field}：${v.message}`).join('；');
-    throw new ApiError(response.status, details || data.error?.message || '操作未完成，请重试。');
+    const fallback=response.status===404
+      ? (import.meta.env.DEV?'服务接口未更新，请重启本地 LifeAgent 后刷新页面。':'服务暂不支持此操作，请刷新页面后重试。')
+      : response.status===503?'服务尚未就绪，请稍后重试。':`操作未完成（HTTP ${response.status}），请重试。`;
+    throw new ApiError(response.status, details || data.error?.message || fallback);
   }
   return data as T;
 }
