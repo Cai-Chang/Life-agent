@@ -6,6 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from lifeagent.auth import AuthLimiter, router
 from lifeagent.database import readiness
+from lifeagent.planning import router as planning_router
 
 
 def create_app():
@@ -46,6 +47,7 @@ def create_app():
         return JSONResponse(status_code=422, content={'error': {'code': 'VALIDATION_ERROR', 'message': '请检查输入字段', 'fields': fields}})
 
     app.include_router(router)
+    app.include_router(planning_router)
     app.add_api_route('/health/live', live, methods=['GET'])
     app.add_api_route('/health/ready', ready, methods=['GET'])
     return app

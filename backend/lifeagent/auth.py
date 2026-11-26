@@ -201,8 +201,8 @@ def issue_session(db: Session, user: User, response: Response, request: Request)
     return profile(db, Identity(user, record))
 
 
-def audit(db, user, action, workspace_id=None):
-    db.add(AuditLog(actor_id=user.id, workspace_id=workspace_id, action=action, outcome='success'))
+def audit(db, user, action, workspace_id=None, target_id=None):
+    db.add(AuditLog(actor_id=user.id, workspace_id=workspace_id, action=action, outcome='success', target_id=target_id))
 
 
 @router.post('/auth/register', status_code=201)

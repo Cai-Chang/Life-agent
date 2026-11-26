@@ -2,7 +2,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, Uuid, func
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, Uuid, func, Integer, Text, Index, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -52,6 +52,56 @@ class AuditLog(Base):
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
     actor_id: Mapped[UUID] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), index=True)
     workspace_id: Mapped[UUID | None] = mapped_column(ForeignKey('workspaces.id', ondelete='CASCADE'), nullable=True)
+    target_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
     action: Mapped[str] = mapped_column(String(64))
     outcome: Mapped[str] = mapped_column(String(16), default='success')
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CalendarEvent(Base):
+    __tablename__ = 'calendar_events'
+    __table_args__ = (
+        CheckConstraint('end_at > start_at', name='event_positive_duration'),
+        CheckConstraint("status IN ('active', 'cancelled')", name='event_status'),
+        Index('ix_events_owner_start', 'workspace_id', 'owner_id', 'start_at'),
+    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey('workspaces.id', ondelete='CASCADE'))
+    owner_id: Mapped[UUID] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'))
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text, default='')
+    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(16), default='active')
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Task(Base):
+    __tablename__ = 'tasks'
+    __table_args__ = (
+        CheckConstraint("status IN ('pending', 'in_progress', 'done', 'cancelled')", name='task_status'),
+        CheckConstraint("priority IN ('low', 'normal', 'high')", name='task_priority'),
+        Index('ix_tasks_status_due', 'workspace_id', 'status', 'due_at'),
+    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey('workspaces.id', ondelete='CASCADE'))
+    owner_id: Mapped[UUID] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'))
+    event_id: Mapped[UUID | None] = mapped_column(ForeignKey('calendar_events.id', ondelete='SET NULL'), nullable=True)
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text, default='')
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default='pending')
+    priority: Mapped[str] = mapped_column(String(16), default='normal')
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class OperationRecord(Base):
+    __tablename__ = 'operation_records'
+    workspace_id: Mapped[UUID] = mapped_column(ForeignKey('workspaces.id', ondelete='CASCADE'), primary_key=True)
+    operation_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    request_hash: Mapped[str] = mapped_column(String(64))
+    result: Mapped[dict] = mapped_column(JSON)
+    status_code: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
