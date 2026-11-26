@@ -6,12 +6,12 @@
 - 初始目录仅有需求文档，无应用代码。
 - DEV-01：工程初始化已完成；本机启动、GitHub 云端 CI 与真实容器栈验收通过，API/前端多架构镜像已发布。
 - DEV-02：注册、登录、退出、个人空间与用户隔离已实现并通过本机验收。
-- DEV-03：日程与待办手动闭环本机验收完成，功能分支 CI 待验收。
+- DEV-03：日程与待办手动闭环本机、云端与容器验收完成；PR #1 待审查，未合并。
 - DEV-04 至 DEV-08 尚未开始。
 
 ## 验收记录
 
-最新本机验收：后端32项测试、桌面/手机12项E2E、前端类型检查与生产构建通过；日程待办闭环可用。DEV-03 云端结果见 `docs/verification-dev03.md`。上一阶段工程基础的Compose 默认和 Worker profile 校验通过，容器栈已在 GitHub runner 实际构建、启动并通过认证冒烟；API/前端镜像发布成功。详见 `docs/verification-dev02.md` 与 `docs/verification-cicd.md`。
+最新本机验收：后端32项测试、桌面/手机12项E2E、前端类型检查与生产构建通过；日程待办闭环可用。DEV-03 云端结果见 `docs/verification-dev03.md`。上一阶段工程基础的 Compose 默认和 Worker profile 校验通过，容器栈已在 GitHub runner 实际构建、启动并通过认证冒烟；API/前端镜像发布成功。详见 `docs/verification-dev02.md` 与 `docs/verification-cicd.md`。
 
 ## 2026-11-25 · 首轮 DEV-01a：后端骨架与健康检查契约
 
@@ -153,3 +153,5 @@
 - 按空间锁定事务，重查冲突和版本；重复操作与并发请求不产生重复写入或静默覆盖。写入保留元数据审计目标 ID。
 - 本机后端32项、桌面/手机12项、类型检查与构建通过；迁移升级/回退再升级保留账号。详细范围、测试与限制见 docs/verification-dev03.md。
 - 当前在 feature/calendar-tasks 开发，待 PR/CI 验收，不自动合并 main 或部署。Autoloop 保持关闭。
+
+- DEV-03 云端运行45765572578已成功：32后端、12浏览器、容器栈与日程待办冒烟均通过。PR #1目标develop，未合并；功能分支不发布镜像。自动push/PR触发未观察到，本次实测由手动触发完成，保留该工程限制记录。

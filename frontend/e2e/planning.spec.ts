@@ -89,4 +89,3 @@ test('配置时区与夏令时重复、缺失时刻处理',()=>{
   expect(candidates('2026-03-08T02:30','America/New_York')).toEqual([]);
   expect(dayStart('2026-12-01','Asia/Shanghai')).toBe('2026-11-30T16:00:00.000Z');
 });
-

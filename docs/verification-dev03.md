@@ -18,6 +18,15 @@
 
 ## 云端与交付
 
-待功能分支上传后运行 CI；只有实际成功才记录容器和云端验收。本机没有 Docker Engine，容器验证由 GitHub runner 执行。本轮不合并 main、不发布生产版本或部署服务器。
+功能分支已上传，PR：https://github.com/Cai-Chang/Life-agent/pull/1 ，目标 develop，尚未合并。
+
+云端完整验收成功：https://github.com/Cai-Chang/Life-agent/actions/runs/45765572578 。受测业务提交为 `75e1d41c1926a9d4d3b8f056a190d449e945d8d6`。
+
+- 后端32 passed、浏览器12 passed、前端构建、Compose 配置检查均成功。
+- GitHub runner 实际构建并启动完整容器栈，经 Nginx 完成 event/replay/conflict/linked task/completion/cancellation/deletion 冒烟及既有认证冒烟，均成功。
+- 功能分支的 publish 正确跳过，未更新 main 镜像或部署服务器。
+- 本次采用 workflow_dispatch 实测；推送/PR 后未观察到自动运行记录，自动触发仍是待跟踪的工程问题，不把本次手动验收描述为自动触发已恢复。
+- 收尾提交只更新验收文档并删除测试文件尾部空行，使用 [skip ci]；业务代码仍与上述受测提交一致。
+- 本机没有 Docker Engine，容器验证在 GitHub runner 完成。本机测试启动的临时 API/前端已结束；项目数据库服务原先已运行，保持原状态；未启动 Autoloop。
 
 本轮迁移新增业务表，已有账号数据保留；首次原生开发启动器或 Compose 迁移步骤会显式升级。回退0003会删除新增日程/待办/幂等表，不能在有需保留的业务数据时直接回退。
