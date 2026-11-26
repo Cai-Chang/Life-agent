@@ -84,6 +84,8 @@ npm --prefix frontend run build
 
 CI 配置位于 `.github/workflows/check.yml`：固定官方 Actions 提交，运行后端真实 PostgreSQL 测试、前端类型检查与构建、桌面/手机 E2E、Compose 校验、真实容器启动与认证冒烟。main 或版本标签通过后自动发布 API/前端的 amd64、arm64 镜像到 GHCR，部署地址稍后确定；部署说明见 [仓库与 CI/CD](docs/repository-and-cicd.md)。云端 CI 是否通过必须以实际工作流结果为准。
 
+首次云端测试和镜像发布均已通过：[CI/CD 验收报告](docs/verification-cicd.md)（本次手动触发验收）。
+
 最新本机测试结果及未验收项见 [验收报告](docs/verification-dev02.md) 和 [开发进度](docs/development-status.md)。
 
 ## 接口
