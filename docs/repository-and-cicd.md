@@ -29,7 +29,7 @@ PR 只使用只读 contents 权限，不发布镜像。所有外部 Actions 固�
 
 部署服务器尚未指定；当前配置的是持续交付镜像，不自动连接或部署到任何服务器。
 
-同一个工作流中的 publish 作业依赖 test 成功，仅 main 推送或版本标签触发。使用 GitHub 为工作流自动提供的 GITHUB_TOKEN 发布本仓库关联的 GHCR 镜像，不需要在代码中配置个人 Token。
+同一个工作流中的 publish 作业依赖 test 成功，仅 main 推送、版本标签或在这些引用上手动运行时触发。使用 GitHub 为工作流自动提供的 GITHUB_TOKEN 发布本仓库关联的 GHCR 镜像，不需要在代码中配置个人 Token。
 
 镜像：
 
