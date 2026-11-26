@@ -2,7 +2,7 @@
 
 个人与家庭智能管家的开发项目。正式仓库：[Cai-Chang/Life-agent](https://github.com/Cai-Chang/Life-agent)。需求基线为 [LifeAgent_V0.1.md](LifeAgent_V0.1.md)。
 
-当前已可使用：注册、登录、退出、个人空间、空间改名、昵称和 IANA 时区设置。账号使用 Argon2id 密码哈希、可撤销的服务端会话和 HttpOnly Cookie；个人空间按用户归属隔离。日历、待办、AI 对话、MCP 与任务执行属于后续阶段，当前没有这些业务功能。
+当前已可使用：注册、登录、退出、个人空间、空间改名、昵称和 IANA 时区设置，以及日程与待办管理。账号使用 Argon2id 密码哈希、可撤销的服务端会话和 HttpOnly Cookie；个人空间按用户归属隔离。日程支持周/月查看、新建、编辑、取消、恢复及重叠检查；待办支持优先级、截止时间、四种状态、关联日程、筛选和删除。AI 对话、MCP 与 Agent 任务执行属于后续阶段。
 
 `frontend/` 是 LifeAgent 产品界面；`autoloop-chat/` 是独立的开发任务管理工具。运行 LifeAgent 不需要启动 Autoloop。
 
@@ -57,7 +57,7 @@ docker compose up --build -d
 ## 数据库与迁移
 
 - PostgreSQL + SQLAlchemy，显式 Alembic 升级：在 `backend/` 执行 `../.conda/lifeagent-dev/bin/python -m lifeagent.migrate`，环境中需有 `DATABASE_URL`。
-- `0001_baseline` 建立版本跟踪；`0002_auth_personal` 建立用户、个人空间、成员、会话和审计表。
+- `0001_baseline` 建立版本跟踪；`0002_auth_personal` 建立用户、个人空间、成员、会话和审计表；`0003_calendar_tasks` 增加日程、待办、幂等操作记录及审计目标 ID。
 - 请求和应用启动不会自行 `create_all` 或迁移；开发启动器和 Compose 的迁移步骤会显式升级。
 - `/health/live` 仅验证进程；`/health/ready` 验证真实连接和迁移版本，未就绪返回 503，就绪返回 200，不暴露连接串。
 - 原生开发库为 `lifeagent_dev`。pytest 和浏览器测试会另外创建随机测试库，只清理自己创建的测试库，不清空开发库。
@@ -100,8 +100,16 @@ CI 配置位于 `.github/workflows/check.yml`：固定官方 Actions 提交，�
 | GET / PATCH | `/me` | 获取资料、修改昵称和时区 |
 | GET | `/workspaces` | 获取本人的个人空间 |
 | GET / PATCH | `/workspaces/{id}` | 读取空间或修改空间名，仅允许本人 |
+| GET / POST | `/events` | 按 start/end 时间范围查询、创建日程 |
+| GET / PATCH / DELETE | `/events/{id}` | 读取、修改、取消日程（保留关联待办） |
+| GET / POST | `/tasks` | 查询、创建待办，支持状态/截止时间筛选 |
+| GET / PATCH / DELETE | `/tasks/{id}` | 读取、修改、永久删除待办 |
 
 写请求使用 JSON。浏览器会话由 HttpOnly Cookie 携带；已登录写请求需从注册、登录或 `/me` 的响应取得 `csrf_token` 并在 `X-CSRF-Token` 头中提交。前端仅在内存保存该 CSRF token，不将密码或会话凭据写入 localStorage。
+
+日程和待办写接口还要求 `Idempotency-Key`（8–128 位 ASCII 字母、数字、点、横线、下划线），同一操作重试须保持相同键和参数。创建成功返回 201；修改/删除返回 200；同键不同参数、重叠日程、旧版本更新或非法状态转换返回 409。PATCH 和 DELETE 的 JSON 中必须包含当前 `version`。DELETE 日程表示取消，PATCH `status=active` 可恢复，恢复时重新检查冲突；DELETE 待办为永久删除，界面会先确认。
+
+时间参数须包含 UTC 偏移或 Z；服务端按 UTC 存储/返回，界面按个人 IANA 时区输入和展示。相邻日程不冲突，重叠则拒绝保存；跨日事件在经过的每一天显示。夏令时重复时间需在界面选择具体时刻，不存在的时刻不能保存。日程列表要求范围，最长一年；日程/待办列表支持 `limit`、`offset`，响应含 `has_more`，界面自动加载后续页。
 
 ## 目录与阶段
 
@@ -116,4 +124,4 @@ docs/                  决策、架构与真实开发记录
 autoloop-chat/         独立的 Autoloop 管理工具
 ```
 
-当前完成 DEV-02 的账号与个人空间闭环。DEV-01 工程文件已补齐，容器运行及远端 CI 的验收情况单独列在报告中；后续按 DEV-03 开发日程/待办及冲突检查。代码通过正式 GitHub 仓库管理；main 用于稳定镜像交付，develop 用于后续开发集成。
+当前完成 DEV-03 的日程与待办手动闭环，本轮验收见 [DEV-03 报告](docs/verification-dev03.md)。下一阶段是 DEV-04 AI 对话；DEV-03 不包含 AI 自动规划或主动提醒。代码通过正式 GitHub 仓库管理；main 用于稳定镜像交付，develop 用于后续开发集成。
